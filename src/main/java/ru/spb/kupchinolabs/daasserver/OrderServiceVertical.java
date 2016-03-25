@@ -39,13 +39,14 @@ public class OrderServiceVertical extends AbstractVerticle {
         router.route().handler(StaticHandler.create());
         vertx.createHttpServer().requestHandler(router::accept).listen(8080);
         //TODO add security, tls
-
         vertx.eventBus().consumer(Constants.ORDER_CREATE, this::create);
     }
 
     private void create(Message<JsonObject> orderMsg) {
+        //TODO validation
         final JsonObject order = orderMsg.body();
         order.put("id", ++idSequence);
+        order.put("status", "pending");
         orders.put(idSequence, order);
         orderMsg.reply("success");
         vertx.eventBus().publish(Constants.ORDER_REALTIME, order);

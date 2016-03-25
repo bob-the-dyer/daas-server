@@ -21,7 +21,6 @@ public class CreateNewOrderEmulator extends AbstractVerticle {
         message.put("from", "Aptekarsky per, dom " + ++globalCounter);
         message.put("to", "Aptekarsky per, dom " + globalCounter);
         message.put("comment", "I am happy DaaS user");
-        message.put("status", "pending");
         vertx.eventBus().send(Constants.ORDER_CREATE, message);
 
     }
