@@ -25,7 +25,7 @@ public class StarterVertical extends AbstractVerticle {
         final AsyncResultHandler completionHandler = new AsyncResultHandler();
         log.info("deploying webservice...");
         vertx.deployVerticle(OrderServiceVertical.class.getName(), completionHandler);
-        vertx.deployVerticle(RealtimeEmulatorServiceVertical.class.getName(), completionHandler);
+        vertx.deployVerticle(CreateNewOrderEmulator.class.getName(), completionHandler);
 
     }
 

@@ -16,7 +16,11 @@
             console.log("recieving the message " + msg);
             $('#realtime').append(
                             "<p>" +
-                            msg.id + ", from " + msg.from + ", to " + msg.to + ", comment " + msg.comment +
+                            "id = " + msg.id +
+                            ", from " + msg.from +
+                            ", to " + msg.to +
+                            ", comment " + msg.comment +
+                            ", status " + msg.status +
                             "</p>");
         });
     };
