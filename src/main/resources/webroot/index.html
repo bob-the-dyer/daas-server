@@ -1,0 +1,30 @@
+<html>
+<head>
+    <title>Realtime test</title>
+    <meta charset="UTF-8">
+    <script src="js3rdparty/jquery.min.js"></script>
+    <script src="js3rdparty/sockjs-0.3.4.min.js"></script>
+    <script src="js3rdparty/vertxbus.js"></script>
+</head>
+<body>
+<H2>Realtime:</H2>
+<script>
+    var eb = new vertx.EventBus("/eventbus");
+    eb.onopen = function () {
+        console.log("opening the socket");
+        eb.registerHandler("order.realtime", function (msg) {
+            console.log("recieving the message " + msg);
+            $('#realtime').append(
+                            "<p>" +
+                            msg.id + ", from " + msg.from + ", to " + msg.to + ", comment " + msg.comment +
+                            "</p>");
+        });
+    };
+    eb.onclose = function () {
+        console.log("closing socket");
+        eb = null;
+    };
+</script>
+<div id="realtime"></div>
+</body>
+</html>
