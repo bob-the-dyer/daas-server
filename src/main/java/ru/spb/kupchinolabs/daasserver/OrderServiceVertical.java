@@ -35,7 +35,7 @@ public class OrderServiceVertical extends AbstractVerticle {
         BridgeOptions options = new BridgeOptions()
                 .addOutboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_QUERYALL))
                 .addOutboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_REALTIME))
-                .addOutboundPermitted(new PermittedOptions().setAddressRegex(Constants.ORDER_REALTIME_SPECIFIC_PREFIX))
+                .addOutboundPermitted(new PermittedOptions().setAddressRegex(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + ".+"))
                 .addInboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_CREATE));
         sockJSHandler.bridge(options);
 
