@@ -47,11 +47,13 @@ public class OrderServiceVertical extends AbstractVerticle {
         vertx.eventBus().consumer(Constants.ORDER_CREATE, this::create);
         vertx.eventBus().consumer(Constants.ORDER_ACTION, this::action);
 
-        vertx.setPeriodic(10000, this::emulateCaptured); //TODO remove
-        vertx.setPeriodic(20000, this::emulateEnroute); //TODO remove
-        vertx.setPeriodic(30000, this::emulatePickudUp); //TODO remove
-        vertx.setPeriodic(40000, this::emulateDelivering); //TODO remove
-        vertx.setPeriodic(50000, this::emulateDelivered); //TODO remove
+        if (config().getBoolean("emulation") == null || config().getBoolean("emulation")) {
+            vertx.setPeriodic(10000, this::emulateCaptured); //TODO remove
+            vertx.setPeriodic(20000, this::emulateEnroute); //TODO remove
+            vertx.setPeriodic(40000, this::emulatePickudUp); //TODO remove
+            vertx.setPeriodic(80000, this::emulateDelivering); //TODO remove
+            vertx.setPeriodic(160000, this::emulateDelivered); //TODO remove
+        }
     }
 
     private void action(Message<JsonObject> msg) {
