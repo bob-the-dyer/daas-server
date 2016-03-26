@@ -12,7 +12,7 @@ public class CreateNewOrderEmulator extends AbstractVerticle {
 
     @Override
     public void start() throws Exception {
-//        vertx.setPeriodic(5000, this::sendRealtime);
+        vertx.setPeriodic(5000, this::sendRealtime);
 
     }
 
