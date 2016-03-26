@@ -58,7 +58,7 @@ public class OrderServiceVertical extends AbstractVerticle {
                 order.put("courier", "New Courier");
                 log.log(Level.INFO, "capturing order #" + order.getLong("id"));
                 vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong("id"), order);
-                vertx.eventBus().send(Constants.ORDER_REALTIME, order);
+                vertx.eventBus().publish(Constants.ORDER_REALTIME, order);
             }
         });
     }
