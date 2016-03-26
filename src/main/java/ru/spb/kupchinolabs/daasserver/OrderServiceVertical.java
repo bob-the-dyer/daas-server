@@ -45,11 +45,71 @@ public class OrderServiceVertical extends AbstractVerticle {
         //TODO add security, tls
         vertx.eventBus().consumer(Constants.ORDER_CREATE, this::create);
 
-        vertx.setPeriodic(10000, this::mockCapturePending); //TODO remove
+        vertx.setPeriodic(10000, this::mockCaptured); //TODO remove
+        vertx.setPeriodic(20000, this::mockEnroute); //TODO remove
+        vertx.setPeriodic(30000, this::mockPickudUp); //TODO remove
+        vertx.setPeriodic(40000, this::mockDelivering); //TODO remove
+        vertx.setPeriodic(50000, this::mockDelivered); //TODO remove
     }
 
-    private void mockCapturePending(Long aLong) {
-        log.log(Level.INFO, "in mockCapturePending");
+    private void mockDelivered(Long aLong) {
+        log.log(Level.INFO, "in mockDelivered");
+        orders.entrySet().stream().forEach(entry -> {
+            final JsonObject order = entry.getValue();
+            if ("delivering".equals(order.getString("status"))) {
+                order.put("status", "delivered");
+                order.put("timestamp", format.format(new Date()));
+                log.log(Level.INFO, "delivered, order #" + order.getLong("id"));
+                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong("id"), order);
+                vertx.eventBus().publish(Constants.ORDER_REALTIME, order);
+            }
+        });
+    }
+
+    private void mockDelivering(Long aLong) {
+        log.log(Level.INFO, "in mockDelivering");
+        orders.entrySet().stream().forEach(entry -> {
+            final JsonObject order = entry.getValue();
+            if ("pickedup".equals(order.getString("status"))) {
+                order.put("status", "delivering");
+                order.put("timestamp", format.format(new Date()));
+                log.log(Level.INFO, "delivering order #" + order.getLong("id"));
+                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong("id"), order);
+                vertx.eventBus().publish(Constants.ORDER_REALTIME, order);
+            }
+        });
+    }
+
+    private void mockPickudUp(Long aLong) {
+        log.log(Level.INFO, "in mockPickudUp");
+        orders.entrySet().stream().forEach(entry -> {
+            final JsonObject order = entry.getValue();
+            if ("enroute".equals(order.getString("status"))) {
+                order.put("status", "pickedup");
+                order.put("timestamp", format.format(new Date()));
+                log.log(Level.INFO, "picking up order #" + order.getLong("id"));
+                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong("id"), order);
+                vertx.eventBus().publish(Constants.ORDER_REALTIME, order);
+            }
+        });
+    }
+
+    private void mockEnroute(Long aLong) {
+        log.log(Level.INFO, "in mockEnroute");
+        orders.entrySet().stream().forEach(entry -> {
+            final JsonObject order = entry.getValue();
+            if ("captured".equals(order.getString("status"))) {
+                order.put("status", "enroute");
+                order.put("timestamp", format.format(new Date()));
+                log.log(Level.INFO, "enrouting order #" + order.getLong("id"));
+                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong("id"), order);
+                vertx.eventBus().publish(Constants.ORDER_REALTIME, order);
+            }
+        });
+    }
+
+    private void mockCaptured(Long aLong) {
+        log.log(Level.INFO, "in mockCaptured");
         orders.entrySet().stream().forEach(entry -> {
             final JsonObject order = entry.getValue();
             if ("pending".equals(order.getString("status"))) {
