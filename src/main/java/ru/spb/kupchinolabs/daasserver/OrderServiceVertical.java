@@ -56,11 +56,11 @@ public class OrderServiceVertical extends AbstractVerticle {
         log.log(Level.INFO, "in mockDelivered");
         orders.entrySet().stream().forEach(entry -> {
             final JsonObject order = entry.getValue();
-            if ("delivering".equals(order.getString("status"))) {
-                order.put("status", "delivered");
-                order.put("timestamp", format.format(new Date()));
-                log.log(Level.INFO, "delivered, order #" + order.getLong("id"));
-                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong("id"), order);
+            if (Constants.ORDER_STATUS_DELIVERING.equals(order.getString(Constants.STATUS))) {
+                order.put(Constants.STATUS, Constants.ORDER_STATUS_DELIVERED);
+                order.put(Constants.TIMESTAMP, format.format(new Date()));
+                log.log(Level.INFO, "delivered, order #" + order.getLong(Constants.ORDER_ID));
+                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong(Constants.ORDER_ID), order);
                 vertx.eventBus().publish(Constants.ORDER_REALTIME, order);
             }
         });
@@ -70,11 +70,11 @@ public class OrderServiceVertical extends AbstractVerticle {
         log.log(Level.INFO, "in mockDelivering");
         orders.entrySet().stream().forEach(entry -> {
             final JsonObject order = entry.getValue();
-            if ("pickedup".equals(order.getString("status"))) {
-                order.put("status", "delivering");
-                order.put("timestamp", format.format(new Date()));
-                log.log(Level.INFO, "delivering order #" + order.getLong("id"));
-                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong("id"), order);
+            if (Constants.ORDER_STATUS_PICKEDUP.equals(order.getString(Constants.STATUS))) {
+                order.put(Constants.STATUS, Constants.ORDER_STATUS_DELIVERING);
+                order.put(Constants.TIMESTAMP, format.format(new Date()));
+                log.log(Level.INFO, "delivering order #" + order.getLong(Constants.ORDER_ID));
+                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong(Constants.ORDER_ID), order);
                 vertx.eventBus().publish(Constants.ORDER_REALTIME, order);
             }
         });
@@ -84,11 +84,11 @@ public class OrderServiceVertical extends AbstractVerticle {
         log.log(Level.INFO, "in mockPickudUp");
         orders.entrySet().stream().forEach(entry -> {
             final JsonObject order = entry.getValue();
-            if ("enroute".equals(order.getString("status"))) {
-                order.put("status", "pickedup");
-                order.put("timestamp", format.format(new Date()));
-                log.log(Level.INFO, "picking up order #" + order.getLong("id"));
-                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong("id"), order);
+            if (Constants.ORDER_STATUS_ENROUTE.equals(order.getString(Constants.STATUS))) {
+                order.put(Constants.STATUS, Constants.ORDER_STATUS_PICKEDUP);
+                order.put(Constants.TIMESTAMP, format.format(new Date()));
+                log.log(Level.INFO, "picking up order #" + order.getLong(Constants.ORDER_ID));
+                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong(Constants.ORDER_ID), order);
                 vertx.eventBus().publish(Constants.ORDER_REALTIME, order);
             }
         });
@@ -98,11 +98,11 @@ public class OrderServiceVertical extends AbstractVerticle {
         log.log(Level.INFO, "in mockEnroute");
         orders.entrySet().stream().forEach(entry -> {
             final JsonObject order = entry.getValue();
-            if ("captured".equals(order.getString("status"))) {
-                order.put("status", "enroute");
-                order.put("timestamp", format.format(new Date()));
-                log.log(Level.INFO, "enrouting order #" + order.getLong("id"));
-                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong("id"), order);
+            if (Constants.ORDER_STATUS_CAPTURED.equals(order.getString(Constants.STATUS))) {
+                order.put(Constants.STATUS, Constants.ORDER_STATUS_ENROUTE);
+                order.put(Constants.TIMESTAMP, format.format(new Date()));
+                log.log(Level.INFO, "enrouting order #" + order.getLong(Constants.ORDER_ID));
+                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong(Constants.ORDER_ID), order);
                 vertx.eventBus().publish(Constants.ORDER_REALTIME, order);
             }
         });
@@ -112,12 +112,12 @@ public class OrderServiceVertical extends AbstractVerticle {
         log.log(Level.INFO, "in mockCaptured");
         orders.entrySet().stream().forEach(entry -> {
             final JsonObject order = entry.getValue();
-            if ("pending".equals(order.getString("status"))) {
-                order.put("status", "captured");
-                order.put("timestamp", format.format(new Date()));
-                order.put("courier", "New Courier");
-                log.log(Level.INFO, "capturing order #" + order.getLong("id"));
-                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong("id"), order);
+            if (Constants.ORDER_STATUS_PENDING.equals(order.getString(Constants.STATUS))) {
+                order.put(Constants.STATUS, Constants.ORDER_STATUS_CAPTURED);
+                order.put(Constants.TIMESTAMP, format.format(new Date()));
+                order.put(Constants.COURIER, "New Courier");
+                log.log(Level.INFO, "capturing order #" + order.getLong(Constants.ORDER_ID));
+                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong(Constants.ORDER_ID), order);
                 vertx.eventBus().publish(Constants.ORDER_REALTIME, order);
             }
         });
@@ -126,9 +126,9 @@ public class OrderServiceVertical extends AbstractVerticle {
     private void create(Message<JsonObject> orderMsg) {
         //TODO validation
         final JsonObject order = orderMsg.body();
-        order.put("id", ++idSequence);
-        order.put("status", "pending");
-        order.put("timestamp", format.format(new Date()));
+        order.put(Constants.ORDER_ID, ++idSequence);
+        order.put(Constants.STATUS, Constants.ORDER_STATUS_PENDING);
+        order.put(Constants.TIMESTAMP, format.format(new Date()));
         log.log(Level.INFO, "adding new order " + order.toString());
         orders.put(idSequence, order);
         orderMsg.reply(order);

@@ -16,7 +16,8 @@
             console.log("recieving the message " + msg);
             $('#realtime').append(
                             "<p>" +
-                            "id = " + msg.id +
+                            msg.timestamp +
+                            "  -- id = " + msg.id +
                             ", from " + msg.from +
                             ", to " + msg.to +
                             ", comment " + msg.comment +
