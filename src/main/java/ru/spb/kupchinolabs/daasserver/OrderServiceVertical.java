@@ -36,89 +36,94 @@ public class OrderServiceVertical extends AbstractVerticle {
                 .addOutboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_QUERYALL))
                 .addOutboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_REALTIME))
                 .addOutboundPermitted(new PermittedOptions().setAddressRegex(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + ".+"))
-                .addInboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_CREATE));
+                .addInboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_CREATE))
+                .addInboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_ACTION));
         sockJSHandler.bridge(options);
 
         router.route("/eventbus/*").handler(sockJSHandler);
         router.route().handler(StaticHandler.create());
-        vertx.createHttpServer().requestHandler(router::accept).listen(8080);
-        //TODO add security, tls
-        vertx.eventBus().consumer(Constants.ORDER_CREATE, this::create);
+        vertx.createHttpServer().requestHandler(router::accept).listen(8080);//TODO add security, tls
 
-        vertx.setPeriodic(10000, this::mockCaptured); //TODO remove
-        vertx.setPeriodic(20000, this::mockEnroute); //TODO remove
-        vertx.setPeriodic(30000, this::mockPickudUp); //TODO remove
-        vertx.setPeriodic(40000, this::mockDelivering); //TODO remove
-        vertx.setPeriodic(50000, this::mockDelivered); //TODO remove
+        vertx.eventBus().consumer(Constants.ORDER_CREATE, this::create);
+        vertx.eventBus().consumer(Constants.ORDER_ACTION, this::action);
+
+        vertx.setPeriodic(10000, this::emulateCaptured); //TODO remove
+        vertx.setPeriodic(20000, this::emulateEnroute); //TODO remove
+        vertx.setPeriodic(30000, this::emulatePickudUp); //TODO remove
+        vertx.setPeriodic(40000, this::emulateDelivering); //TODO remove
+        vertx.setPeriodic(50000, this::emulateDelivered); //TODO remove
     }
 
-    private void mockDelivered(Long aLong) {
-        log.log(Level.INFO, "in mockDelivered");
+    private void action(Message<JsonObject> msg) {
+        //TODO add state machine for order transitions
+        log.log(Level.INFO, "in action");
+        final JsonObject updatedOrder = msg.body();
+        final Long id = updatedOrder.getLong(Constants.ORDER_ID);
+        log.log(Level.INFO, "current order state: " + orders.get(id));
+        log.log(Level.INFO, "new order state    : " + updatedOrder);
+        updatedOrder.put(Constants.TIMESTAMP, format.format(new Date()));
+        orders.put(id, updatedOrder);
+        vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + updatedOrder.getLong(Constants.ORDER_ID), updatedOrder);
+        vertx.eventBus().publish(Constants.ORDER_REALTIME, updatedOrder);
+    }
+
+    private void emulateDelivered(Long aLong) {
+        log.log(Level.INFO, "in emulateDelivered");
         orders.entrySet().stream().forEach(entry -> {
             final JsonObject order = entry.getValue();
             if (Constants.ORDER_STATUS_DELIVERING.equals(order.getString(Constants.STATUS))) {
                 order.put(Constants.STATUS, Constants.ORDER_STATUS_DELIVERED);
-                order.put(Constants.TIMESTAMP, format.format(new Date()));
                 log.log(Level.INFO, "delivered, order #" + order.getLong(Constants.ORDER_ID));
-                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong(Constants.ORDER_ID), order);
-                vertx.eventBus().publish(Constants.ORDER_REALTIME, order);
+                vertx.eventBus().send(Constants.ORDER_ACTION, order);
             }
         });
     }
 
-    private void mockDelivering(Long aLong) {
-        log.log(Level.INFO, "in mockDelivering");
+    private void emulateDelivering(Long aLong) {
+        log.log(Level.INFO, "in emulateDelivering");
         orders.entrySet().stream().forEach(entry -> {
             final JsonObject order = entry.getValue();
             if (Constants.ORDER_STATUS_PICKEDUP.equals(order.getString(Constants.STATUS))) {
                 order.put(Constants.STATUS, Constants.ORDER_STATUS_DELIVERING);
-                order.put(Constants.TIMESTAMP, format.format(new Date()));
                 log.log(Level.INFO, "delivering order #" + order.getLong(Constants.ORDER_ID));
-                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong(Constants.ORDER_ID), order);
-                vertx.eventBus().publish(Constants.ORDER_REALTIME, order);
+                vertx.eventBus().send(Constants.ORDER_ACTION, order);
             }
         });
     }
 
-    private void mockPickudUp(Long aLong) {
-        log.log(Level.INFO, "in mockPickudUp");
+    private void emulatePickudUp(Long aLong) {
+        log.log(Level.INFO, "in emulatePickudUp");
         orders.entrySet().stream().forEach(entry -> {
             final JsonObject order = entry.getValue();
             if (Constants.ORDER_STATUS_ENROUTE.equals(order.getString(Constants.STATUS))) {
                 order.put(Constants.STATUS, Constants.ORDER_STATUS_PICKEDUP);
-                order.put(Constants.TIMESTAMP, format.format(new Date()));
                 log.log(Level.INFO, "picking up order #" + order.getLong(Constants.ORDER_ID));
-                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong(Constants.ORDER_ID), order);
-                vertx.eventBus().publish(Constants.ORDER_REALTIME, order);
+                vertx.eventBus().send(Constants.ORDER_ACTION, order);
             }
         });
     }
 
-    private void mockEnroute(Long aLong) {
-        log.log(Level.INFO, "in mockEnroute");
+    private void emulateEnroute(Long aLong) {
+        log.log(Level.INFO, "in emulateEnroute");
         orders.entrySet().stream().forEach(entry -> {
             final JsonObject order = entry.getValue();
             if (Constants.ORDER_STATUS_CAPTURED.equals(order.getString(Constants.STATUS))) {
                 order.put(Constants.STATUS, Constants.ORDER_STATUS_ENROUTE);
-                order.put(Constants.TIMESTAMP, format.format(new Date()));
                 log.log(Level.INFO, "enrouting order #" + order.getLong(Constants.ORDER_ID));
-                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong(Constants.ORDER_ID), order);
-                vertx.eventBus().publish(Constants.ORDER_REALTIME, order);
+                vertx.eventBus().send(Constants.ORDER_ACTION, order);
             }
         });
     }
 
-    private void mockCaptured(Long aLong) {
-        log.log(Level.INFO, "in mockCaptured");
+    private void emulateCaptured(Long aLong) {
+        log.log(Level.INFO, "in emulateCaptured");
         orders.entrySet().stream().forEach(entry -> {
             final JsonObject order = entry.getValue();
             if (Constants.ORDER_STATUS_PENDING.equals(order.getString(Constants.STATUS))) {
                 order.put(Constants.STATUS, Constants.ORDER_STATUS_CAPTURED);
-                order.put(Constants.TIMESTAMP, format.format(new Date()));
                 order.put(Constants.COURIER, "New Courier");
                 log.log(Level.INFO, "capturing order #" + order.getLong(Constants.ORDER_ID));
-                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong(Constants.ORDER_ID), order);
-                vertx.eventBus().publish(Constants.ORDER_REALTIME, order);
+                vertx.eventBus().send(Constants.ORDER_ACTION, order);
             }
         });
     }
