@@ -50,11 +50,7 @@ public class OrderServiceVertical extends AbstractVerticle {
 
         if (Boolean.getBoolean("emulation")) {
             vertx.setPeriodic(5000, this::createNewOrder);
-            vertx.setPeriodic(10000, this::emulateCaptured); //TODO remove
-            vertx.setPeriodic(20000, this::emulateEnroute); //TODO remove
-            vertx.setPeriodic(40000, this::emulatePickudUp); //TODO remove
-            vertx.setPeriodic(80000, this::emulateDelivering); //TODO remove
-            vertx.setPeriodic(160000, this::emulateDelivered); //TODO remove
+            vertx.setPeriodic(10000, this::emulateTransition);
         }
     }
 
@@ -67,81 +63,46 @@ public class OrderServiceVertical extends AbstractVerticle {
     }
 
     private void action(Message<JsonObject> msg) {
-        //TODO add state machine for order transitions
         log.log(Level.INFO, "in action");
         final JsonObject updatedOrder = msg.body();
         final Long id = updatedOrder.getLong(Constants.ORDER_ID);
-        log.log(Level.INFO, "current order state: " + orders.get(id));
+        final JsonObject currentOrder = orders.get(id);
+        log.log(Level.INFO, "current order state: " + currentOrder);
         log.log(Level.INFO, "new order state    : " + updatedOrder);
+        final String currentStatus = currentOrder.getString(Constants.STATUS);
+        final String updatedStatus = updatedOrder.getString(Constants.STATUS);
+        if (!updatedStatus.equals(Constants.stateMashine.get(currentStatus))) {
+            final String error = "transition from " + currentStatus + " to " + updatedStatus + " is unsupported, aborting";
+            log.log(Level.WARNING, error);
+            msg.fail(-1, "error");
+            return;
+        }
         updatedOrder.put(Constants.TIMESTAMP, format.format(new Date()));
         orders.put(id, updatedOrder);
         vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + updatedOrder.getLong(Constants.ORDER_ID), updatedOrder);
         vertx.eventBus().publish(Constants.ORDER_REALTIME, updatedOrder);
+        msg.reply("success");
     }
 
-    private void emulateDelivered(Long aLong) {
-        log.log(Level.INFO, "in emulateDelivered");
+    private void emulateTransition(Long aLong) {
+        log.log(Level.INFO, "in emulateTransition");
         orders.entrySet().stream().forEach(entry -> {
-            final JsonObject order = entry.getValue();
-            if (Constants.ORDER_STATUS_DELIVERING.equals(order.getString(Constants.STATUS))) {
-                order.put(Constants.STATUS, Constants.ORDER_STATUS_DELIVERED);
-                log.log(Level.INFO, "delivered, order #" + order.getLong(Constants.ORDER_ID));
-                vertx.eventBus().send(Constants.ORDER_ACTION, order);
-            }
-        });
-    }
-
-    private void emulateDelivering(Long aLong) {
-        log.log(Level.INFO, "in emulateDelivering");
-        orders.entrySet().stream().forEach(entry -> {
-            final JsonObject order = entry.getValue();
-            if (Constants.ORDER_STATUS_PICKEDUP.equals(order.getString(Constants.STATUS))) {
-                order.put(Constants.STATUS, Constants.ORDER_STATUS_DELIVERING);
-                log.log(Level.INFO, "delivering order #" + order.getLong(Constants.ORDER_ID));
-                vertx.eventBus().send(Constants.ORDER_ACTION, order);
-            }
-        });
-    }
-
-    private void emulatePickudUp(Long aLong) {
-        log.log(Level.INFO, "in emulatePickudUp");
-        orders.entrySet().stream().forEach(entry -> {
-            final JsonObject order = entry.getValue();
-            if (Constants.ORDER_STATUS_ENROUTE.equals(order.getString(Constants.STATUS))) {
-                order.put(Constants.STATUS, Constants.ORDER_STATUS_PICKEDUP);
-                log.log(Level.INFO, "picking up order #" + order.getLong(Constants.ORDER_ID));
-                vertx.eventBus().send(Constants.ORDER_ACTION, order);
-            }
-        });
-    }
-
-    private void emulateEnroute(Long aLong) {
-        log.log(Level.INFO, "in emulateEnroute");
-        orders.entrySet().stream().forEach(entry -> {
-            final JsonObject order = entry.getValue();
-            if (Constants.ORDER_STATUS_CAPTURED.equals(order.getString(Constants.STATUS))) {
-                order.put(Constants.STATUS, Constants.ORDER_STATUS_ENROUTE);
-                log.log(Level.INFO, "enrouting order #" + order.getLong(Constants.ORDER_ID));
-                vertx.eventBus().send(Constants.ORDER_ACTION, order);
-            }
-        });
-    }
-
-    private void emulateCaptured(Long aLong) {
-        log.log(Level.INFO, "in emulateCaptured");
-        orders.entrySet().stream().forEach(entry -> {
-            final JsonObject order = entry.getValue();
-            if (Constants.ORDER_STATUS_PENDING.equals(order.getString(Constants.STATUS))) {
-                order.put(Constants.STATUS, Constants.ORDER_STATUS_CAPTURED);
-                order.put(Constants.COURIER, "New Courier");
-                log.log(Level.INFO, "capturing order #" + order.getLong(Constants.ORDER_ID));
-                vertx.eventBus().send(Constants.ORDER_ACTION, order);
+            final JsonObject existedOrder = entry.getValue();
+            final JsonObject orderCopy = existedOrder.copy();
+            final String status = orderCopy.getString(Constants.STATUS);
+            if (Constants.ORDER_STATUS_DELIVERED.equals(status)) {
+                log.log(Level.INFO, "delivered orderCopy #" + orderCopy.getLong(Constants.ORDER_ID) + " was removed");
+                orders.remove(orderCopy.getLong(Constants.ORDER_ID));
+            } else {
+                final String nextStatus = Constants.stateMashine.get(status);
+                log.log(Level.INFO, "orderCopy #" + orderCopy.getLong(Constants.ORDER_ID) + " is changing status from " + status + " to " + nextStatus);
+                orderCopy.put(Constants.STATUS, nextStatus);
+                vertx.eventBus().send(Constants.ORDER_ACTION, orderCopy);
             }
         });
     }
 
     private void create(Message<JsonObject> orderMsg) {
-        //TODO validation
         final JsonObject order = orderMsg.body();
         order.put(Constants.ORDER_ID, ++idSequence);
         order.put(Constants.STATUS, Constants.ORDER_STATUS_PENDING);

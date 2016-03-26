@@ -1,6 +1,9 @@
 package ru.spb.kupchinolabs.daasserver;
 
-public interface Constants {
+import java.util.HashMap;
+import java.util.Map;
+
+public class Constants {
     public static final String ORDER_CREATE = "order.create";
     public static final String ORDER_REALTIME = "order.realtime";
     public static final String ORDER_QUERYALL = "order.queryall";
@@ -21,4 +24,13 @@ public interface Constants {
     public static final String STATUS = "status";
     public static final String TIMESTAMP = "timestamp";
     public static final String COURIER = "courier";
+
+    public static Map<String, String> stateMashine = new HashMap<>();
+    static {
+        stateMashine.put(ORDER_STATUS_PENDING, ORDER_STATUS_CAPTURED);
+        stateMashine.put(ORDER_STATUS_CAPTURED, ORDER_STATUS_ENROUTE);
+        stateMashine.put(ORDER_STATUS_ENROUTE, ORDER_STATUS_PICKEDUP);
+        stateMashine.put(ORDER_STATUS_PICKEDUP, ORDER_STATUS_DELIVERING);
+        stateMashine.put(ORDER_STATUS_DELIVERING, ORDER_STATUS_DELIVERED);
+    }
 }
