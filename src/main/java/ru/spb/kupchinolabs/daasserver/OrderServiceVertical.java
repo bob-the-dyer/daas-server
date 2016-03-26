@@ -21,6 +21,7 @@ import java.util.logging.Logger;
 public class OrderServiceVertical extends AbstractVerticle {
 
     Long idSequence = 0L;
+    private Long globalCounter = 0L;
     Map<Long, JsonObject> orders = new HashMap<>();
     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 
@@ -47,13 +48,22 @@ public class OrderServiceVertical extends AbstractVerticle {
         vertx.eventBus().consumer(Constants.ORDER_CREATE, this::create);
         vertx.eventBus().consumer(Constants.ORDER_ACTION, this::action);
 
-        if (config().getBoolean("emulation") == null || config().getBoolean("emulation")) {
+        if (Boolean.getBoolean("emulation")) {
+            vertx.setPeriodic(5000, this::createNewOrder);
             vertx.setPeriodic(10000, this::emulateCaptured); //TODO remove
             vertx.setPeriodic(20000, this::emulateEnroute); //TODO remove
             vertx.setPeriodic(40000, this::emulatePickudUp); //TODO remove
             vertx.setPeriodic(80000, this::emulateDelivering); //TODO remove
             vertx.setPeriodic(160000, this::emulateDelivered); //TODO remove
         }
+    }
+
+    private void createNewOrder(Long aLong) {
+        final JsonObject message = new JsonObject();
+        message.put(Constants.FROM, "Aptekarsky per, dom " + ++globalCounter);
+        message.put(Constants.TO, "Aptekarsky per, dom " + globalCounter);
+        message.put(Constants.COMMENT, "I am happy DaaS user");
+        vertx.eventBus().send(Constants.ORDER_CREATE, message);
     }
 
     private void action(Message<JsonObject> msg) {

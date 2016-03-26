@@ -23,9 +23,8 @@ public class StarterVertical extends AbstractVerticle {
     public void start() throws Exception {
         log.info("starting to deploy verticals");
         final AsyncResultHandler completionHandler = new AsyncResultHandler();
-        log.info("deploying webservice...");
+        log.info("deploying verticals...");
         vertx.deployVerticle(OrderServiceVertical.class.getName(), completionHandler);
-        vertx.deployVerticle(CreateNewOrderEmulator.class.getName(), completionHandler);
 
     }
 
