@@ -35,8 +35,8 @@ public class OrderServiceVertical extends AbstractVerticle {
         BridgeOptions options = new BridgeOptions()
                 .addOutboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_QUERYALL))
                 .addOutboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_REALTIME))
-                .addInboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_CREATE))
-                .addInboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_CAPTURE));
+                .addOutboundPermitted(new PermittedOptions().setAddressRegex(Constants.ORDER_REALTIME_SPECIFIC_PREFIX))
+                .addInboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_CREATE));
         sockJSHandler.bridge(options);
 
         router.route("/eventbus/*").handler(sockJSHandler);
@@ -44,6 +44,23 @@ public class OrderServiceVertical extends AbstractVerticle {
         vertx.createHttpServer().requestHandler(router::accept).listen(8080);
         //TODO add security, tls
         vertx.eventBus().consumer(Constants.ORDER_CREATE, this::create);
+
+        vertx.setPeriodic(10000, this::mockCapturePending); //TODO remove
+    }
+
+    private void mockCapturePending(Long aLong) {
+        log.log(Level.INFO, "in mockCapturePending");
+        orders.entrySet().stream().forEach(entry -> {
+            final JsonObject order = entry.getValue();
+            if ("pending".equals(order.getString("status"))) {
+                order.put("status", "captured");
+                order.put("timestamp", format.format(new Date()));
+                order.put("courier", "New Courier");
+                log.log(Level.INFO, "capturing order #" + order.getLong("id"));
+                vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + order.getLong("id"), order);
+                vertx.eventBus().send(Constants.ORDER_REALTIME, order);
+            }
+        });
     }
 
     private void create(Message<JsonObject> orderMsg) {
@@ -54,7 +71,7 @@ public class OrderServiceVertical extends AbstractVerticle {
         order.put("timestamp", format.format(new Date()));
         log.log(Level.INFO, "adding new order " + order.toString());
         orders.put(idSequence, order);
-        orderMsg.reply("success");
+        orderMsg.reply(order);
         vertx.eventBus().publish(Constants.ORDER_REALTIME, order);
     }
 
