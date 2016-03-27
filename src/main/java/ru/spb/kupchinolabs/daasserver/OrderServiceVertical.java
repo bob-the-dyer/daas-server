@@ -50,7 +50,7 @@ public class OrderServiceVertical extends AbstractVerticle {
 
         if (Boolean.getBoolean("emulation")) {
             vertx.setPeriodic(20000, this::createNewOrder);
-            vertx.setPeriodic(20000, this::emulateTransition);
+            vertx.setPeriodic(60000, this::emulateTransition);
         }
     }
 
