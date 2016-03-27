@@ -15,6 +15,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -55,7 +56,7 @@ public class OrderServiceVertical extends AbstractVerticle {
     }
 
     private void createNewOrder(Long aLong) {
-        final JsonObject order = TestOrders.orders.get((int) (globalCounter % TestOrders.orders.size()));
+        final JsonObject order = TestOrders.orders.get(new Random().nextInt(TestOrders.orders.size()));
         vertx.eventBus().send(Constants.ORDER_CREATE, order);
     }
 
