@@ -34,7 +34,7 @@ public class OrderServiceVertical extends AbstractVerticle {
 
         SockJSHandler sockJSHandler = SockJSHandler.create(vertx, new SockJSHandlerOptions().setHeartbeatInterval(5000));
         BridgeOptions options = new BridgeOptions()
-                .addOutboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_QUERY_PENDINGS))
+                .addInboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_QUERY_PENDINGS))
                 .addOutboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_REALTIME))
                 .addOutboundPermitted(new PermittedOptions().setAddressRegex(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + ".+"))
                 .addInboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_CREATE))
