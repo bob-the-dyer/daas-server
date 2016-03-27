@@ -49,17 +49,14 @@ public class OrderServiceVertical extends AbstractVerticle {
         vertx.eventBus().consumer(Constants.ORDER_ACTION, this::action);
 
         if (Boolean.getBoolean("emulation")) {
-            vertx.setPeriodic(5000, this::createNewOrder);
-            vertx.setPeriodic(10000, this::emulateTransition);
+            vertx.setPeriodic(20000, this::createNewOrder);
+            vertx.setPeriodic(20000, this::emulateTransition);
         }
     }
 
     private void createNewOrder(Long aLong) {
-        final JsonObject message = new JsonObject();
-        message.put(Constants.FROM, "Aptekarsky per, dom " + ++globalCounter);
-        message.put(Constants.TO, "Aptekarsky per, dom " + globalCounter);
-        message.put(Constants.COMMENT, "I am happy DaaS user");
-        vertx.eventBus().send(Constants.ORDER_CREATE, message);
+        final JsonObject order = TestOrders.orders.get((int) (globalCounter % TestOrders.orders.size()));
+        vertx.eventBus().send(Constants.ORDER_CREATE, order);
     }
 
     private void action(Message<JsonObject> msg) {
