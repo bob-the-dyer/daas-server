@@ -3,6 +3,7 @@ package ru.spb.kupchinolabs.daasserver;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.eventbus.Message;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -13,10 +14,7 @@ import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -36,7 +34,7 @@ public class OrderServiceVertical extends AbstractVerticle {
 
         SockJSHandler sockJSHandler = SockJSHandler.create(vertx, new SockJSHandlerOptions().setHeartbeatInterval(5000));
         BridgeOptions options = new BridgeOptions()
-                .addOutboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_QUERYALL))
+                .addOutboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_QUERY_PENDINGS))
                 .addOutboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_REALTIME))
                 .addOutboundPermitted(new PermittedOptions().setAddressRegex(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + ".+"))
                 .addInboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_CREATE))
@@ -49,11 +47,39 @@ public class OrderServiceVertical extends AbstractVerticle {
 
         vertx.eventBus().consumer(Constants.ORDER_CREATE, this::create);
         vertx.eventBus().consumer(Constants.ORDER_ACTION, this::action);
+        vertx.eventBus().consumer(Constants.ORDER_QUERY_PENDINGS, this::queryPendings);
 
         if (Boolean.getBoolean("emulation")) {
             vertx.setPeriodic(60000, this::createNewOrder);
             vertx.setPeriodic(60000, this::emulateTransition);
+            vertx.setPeriodic(60000, this::logPendings);
         }
+    }
+
+    private void logPendings(Long aLong) {
+        log.log(Level.INFO, "in logPendings");
+        getPendings().stream().forEach(item -> {
+            log.log(Level.INFO, item.toString());
+        });
+        log.log(Level.INFO, "out logPendings");
+    }
+
+    private void queryPendings(Message<Object> msg) {
+        log.log(Level.INFO, "in queryPendings");
+        List<JsonObject> pendings = getPendings();
+        JsonArray reply = new JsonArray(pendings);
+        msg.reply(reply);
+    }
+
+    private List<JsonObject> getPendings() {
+        List<JsonObject> pendings = new ArrayList<>();
+        orders.entrySet().stream().forEach(entry -> {
+            final JsonObject order = entry.getValue();
+            if (Constants.ORDER_STATUS_PENDING.equals(order.getString(Constants.STATUS))) {
+                pendings.add(order);
+            }
+        });
+        return pendings;
     }
 
     private void createNewOrder(Long aLong) {
