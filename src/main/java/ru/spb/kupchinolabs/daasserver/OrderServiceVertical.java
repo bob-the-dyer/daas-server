@@ -51,7 +51,7 @@ public class OrderServiceVertical extends AbstractVerticle {
         vertx.eventBus().consumer(Constants.ORDER_ACTION, this::action);
 
         if (Boolean.getBoolean("emulation")) {
-            vertx.setPeriodic(5000, this::createNewOrder);
+            vertx.setPeriodic(60000, this::createNewOrder);
             vertx.setPeriodic(60000, this::emulateTransition);
         }
     }
