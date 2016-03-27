@@ -74,14 +74,14 @@ public class OrderServiceVertical extends AbstractVerticle {
         if (!updatedStatus.equals(Constants.stateMashine.get(currentStatus))) {
             final String error = "transition from " + currentStatus + " to " + updatedStatus + " is unsupported, aborting";
             log.log(Level.WARNING, error);
-            msg.fail(-1, "error");
+            msg.fail(-1, error);
             return;
         }
         updatedOrder.put(Constants.TIMESTAMP, format.format(new Date()));
         orders.put(id, updatedOrder);
         vertx.eventBus().send(Constants.ORDER_REALTIME_SPECIFIC_PREFIX + updatedOrder.getLong(Constants.ORDER_ID), updatedOrder);
         vertx.eventBus().publish(Constants.ORDER_REALTIME, updatedOrder);
-        msg.reply("success");
+        msg.reply(updatedOrder);
     }
 
     private void emulateTransition(Long aLong) {
@@ -94,6 +94,11 @@ public class OrderServiceVertical extends AbstractVerticle {
                 log.log(Level.INFO, "delivered orderCopy #" + orderCopy.getLong(Constants.ORDER_ID) + " was removed");
                 orders.remove(orderCopy.getLong(Constants.ORDER_ID));
             } else {
+                final Boolean human = orderCopy.getBoolean(Constants.HUMAN);
+                if (human != null && human) {
+                    log.log(Level.INFO, "orderCopy #" + orderCopy.getLong(Constants.ORDER_ID) + " is skipped from emulation as being processed by human");
+                    return;
+                }
                 final String nextStatus = Constants.stateMashine.get(status);
                 log.log(Level.INFO, "orderCopy #" + orderCopy.getLong(Constants.ORDER_ID) + " is changing status from " + status + " to " + nextStatus);
                 orderCopy.put(Constants.STATUS, nextStatus);

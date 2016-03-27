@@ -24,6 +24,7 @@ public class Constants {
     public static final String STATUS = "status";
     public static final String TIMESTAMP = "timestamp";
     public static final String COURIER = "courier";
+    public static final String HUMAN = "human";
 
     public static Map<String, String> stateMashine = new HashMap<>();
     static {
