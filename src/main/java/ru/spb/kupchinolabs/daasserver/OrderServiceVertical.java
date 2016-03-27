@@ -10,6 +10,7 @@ import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
+import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -33,7 +34,7 @@ public class OrderServiceVertical extends AbstractVerticle {
         Router router = Router.router(vertx);
         router.route().handler(BodyHandler.create());
 
-        SockJSHandler sockJSHandler = SockJSHandler.create(vertx);
+        SockJSHandler sockJSHandler = SockJSHandler.create(vertx, new SockJSHandlerOptions().setHeartbeatInterval(5000));
         BridgeOptions options = new BridgeOptions()
                 .addOutboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_QUERYALL))
                 .addOutboundPermitted(new PermittedOptions().setAddress(Constants.ORDER_REALTIME))
